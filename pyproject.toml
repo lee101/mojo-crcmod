@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mojo-crcmod"
+version = "0.1.0"
+description = "Parameterized CRC computation implemented in Mojo"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Lee Penkman", email = "leepenkman@gmail.com"}]
+keywords = ["mojo", "crc", "checksum", "crcmod"]
+
+[project.urls]
+Homepage = "https://github.com/lee101/mojo-crcmod"
+
+[tool.setuptools]
+package-dir = {"" = "python"}
+
+[tool.setuptools.packages.find]
+where = ["python"]
