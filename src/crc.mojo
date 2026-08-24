@@ -185,6 +185,29 @@ def crc_update(
     return (state ^ xor_out) & mask
 
 
+@export("mojo_crc_update_value")
+def mojo_crc_update_value(
+    data_addr: Int,
+    table_addr: Int,
+    n: Int,
+    initial: UInt64,
+    width: Int,
+    reflected: Int,
+    xor_out: UInt64,
+) abi("C") -> UInt64:
+    var table = U64Ptr(unsafe_from_address=table_addr)
+    var safe_data_addr = data_addr if data_addr != 0 else table_addr
+    return crc_update(
+        BPtr(unsafe_from_address=safe_data_addr),
+        table,
+        n,
+        initial,
+        width,
+        reflected != 0,
+        xor_out,
+    )
+
+
 @export("mojo_crc_update")
 def mojo_crc_update(
     data_addr: Int,

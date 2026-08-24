@@ -180,6 +180,22 @@ def test_contiguous_buffer_protocol_inputs_match_upstream(data):
     assert ours(data) == theirs(data)
 
 
+@pytest.mark.parametrize("length", (15, 16, 17))
+@pytest.mark.parametrize(
+    "convert",
+    (
+        bytearray,
+        memoryview,
+        lambda data: np.frombuffer(data, dtype=np.uint8),
+    ),
+)
+def test_native_buffer_bridge_simd_tail_paths_match_upstream(length, convert):
+    data = convert(data_for(length))
+    ours = predefined.mkCrcFun("crc-32c")
+    theirs = upstream_predefined.mkCrcFun("crc-32c")
+    assert ours(data) == theirs(data)
+
+
 def test_strided_buffers_are_rejected_like_upstream():
     data = np.arange(50, dtype=np.uint8)[::2]
     ours = predefined.mkCrcFun("crc-32")

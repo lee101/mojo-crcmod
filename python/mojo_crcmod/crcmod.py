@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import operator
 
-from ._lib import make_table, update as _mojo_update
+from ._lib import make_table, table_address, update as _mojo_update
 
 __all__ = ["mkCrcFun", "Crc"]
 
@@ -144,17 +144,19 @@ def _make_crc_function(
         + _make_advance_table(table, width, reflected_flag)
         + [0] * _PARALLEL_SCRATCH_WORDS
     )
+    native_table_address = table_address(native_table)
 
     def crcfun(data, crc=init_crc):
         return _mojo_update(
             data,
-            native_table,
+            native_table_address,
             operator.index(crc) & mask,
             width,
             reflected_flag,
             xor_out,
         )
 
+    crcfun._native_table = native_table
     return crcfun, table, native_table
 
 

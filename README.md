@@ -87,26 +87,26 @@ below `1.00x` means Mojo was slower.
 
 | Algorithm | Input | Mojo | Upstream crcmod | Mojo / upstream |
 |---|---:|---:|---:|---:|
-| crc-8 | 64 B | 4.44 us | 0.41 us | 0.09x |
-| crc-8 | 4 KiB | 0.63 GB/s | 0.38 GB/s | 1.66x |
-| crc-8 | 1 MiB | 1.53 GB/s | 0.38 GB/s | 4.00x |
-| crc-8 | 16 MiB | 1.68 GB/s | 0.38 GB/s | 4.46x |
-| xmodem | 64 B | 5.76 us | 0.67 us | 0.12x |
-| xmodem | 4 KiB | 0.43 GB/s | 0.29 GB/s | 1.47x |
-| xmodem | 1 MiB | 1.42 GB/s | 0.32 GB/s | 4.41x |
-| xmodem | 16 MiB | 2.27 GB/s | 0.30 GB/s | 7.60x |
-| crc-32 | 64 B | 3.79 us | 0.55 us | 0.14x |
-| crc-32 | 4 KiB | 0.45 GB/s | 0.33 GB/s | 1.37x |
-| crc-32 | 1 MiB | 1.27 GB/s | 0.33 GB/s | 3.84x |
-| crc-32 | 16 MiB | 1.42 GB/s | 0.34 GB/s | 4.16x |
-| crc-64 | 64 B | 6.13 us | 0.59 us | 0.10x |
-| crc-64 | 4 KiB | 0.45 GB/s | 0.31 GB/s | 1.44x |
-| crc-64 | 1 MiB | 1.48 GB/s | 0.32 GB/s | 4.61x |
-| crc-64 | 16 MiB | 1.76 GB/s | 0.33 GB/s | 5.39x |
+| crc-8 | 64 B | 0.43 us | 0.43 us | 1.02x |
+| crc-8 | 4 KiB | 1.30 GB/s | 0.38 GB/s | 3.41x |
+| crc-8 | 1 MiB | 1.49 GB/s | 0.39 GB/s | 3.78x |
+| crc-8 | 16 MiB | 1.92 GB/s | 0.41 GB/s | 4.65x |
+| xmodem | 64 B | 0.41 us | 0.45 us | 1.11x |
+| xmodem | 4 KiB | 1.39 GB/s | 0.30 GB/s | 4.61x |
+| xmodem | 1 MiB | 1.68 GB/s | 0.32 GB/s | 5.22x |
+| xmodem | 16 MiB | 1.94 GB/s | 0.31 GB/s | 6.24x |
+| crc-32 | 64 B | 0.46 us | 0.57 us | 1.24x |
+| crc-32 | 4 KiB | 1.31 GB/s | 0.34 GB/s | 3.92x |
+| crc-32 | 1 MiB | 1.63 GB/s | 0.35 GB/s | 4.64x |
+| crc-32 | 16 MiB | 1.86 GB/s | 0.33 GB/s | 5.66x |
+| crc-64 | 64 B | 0.44 us | 0.45 us | 1.03x |
+| crc-64 | 4 KiB | 1.33 GB/s | 0.33 GB/s | 4.00x |
+| crc-64 | 1 MiB | 1.62 GB/s | 0.35 GB/s | 4.57x |
+| crc-64 | 16 MiB | 1.80 GB/s | 0.34 GB/s | 5.35x |
 
-The fixed Python-to-ctypes cost still dominates 64-byte inputs, where
-upstream's C extension is 7–11 times faster. At 4 KiB Mojo is 1.37–1.66 times
-faster, and at 1 MiB and above it is 3.84–7.60 times faster in this run.
+The native CPython buffer bridge keeps 64-byte inputs at parity or ahead for
+all four measured algorithms. At 4 KiB Mojo is 3.41–4.61 times faster, and at
+1 MiB and above it is 3.78–6.24 times faster in this run.
 
 No GPU path is provided. CRC has a state-dependent recurrence and low
 arithmetic intensity: slicing-by-16 performs table lookups and XORs rather
@@ -135,14 +135,14 @@ independent 4 MiB chunks and processed by up to four CPU workers, then
 combined in order with the advance operator. The parallel scratch space is
 owned by the CRC function and reused.
 
-The ctypes bridge passes integer addresses and scalar parameters through one
-`@export` C ABI function. Exact `bytes` inputs use `PyBytes_AsString`
-directly; other inputs acquire a C-contiguous buffer view. Both routes borrow
-the input without a copy, including contiguous NumPy arrays and
-multidimensional buffers, and the GIL remains held while Mojo reads it.
-Python owns the buffers and controls their lifetimes. Mojo writes the result
-to a caller-owned unsigned 64-bit value and returns a status code; invalid
-pointer, length, or width arguments are rejected before pointer construction.
+The native CPython bridge passes integer addresses and scalar parameters to a
+direct-value `@export` C ABI function. Exact `bytes` inputs use their internal
+storage directly; other inputs acquire a C-contiguous buffer view. Both routes
+borrow the input without a copy, including contiguous NumPy arrays and
+multidimensional buffers, and the GIL remains held while Mojo reads it. Python
+owns the buffers and controls their lifetimes. A separate validated ABI entry
+point remains available to C callers and rejects invalid pointer, length, and
+width arguments before pointer construction.
 
 For CRC objects, each `update` immediately advances the native recurrence; the
 object does not retain input chunks. This keeps streaming memory use constant
