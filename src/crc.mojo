@@ -1,6 +1,5 @@
 """Parameterized table-driven CRC computation exposed through a C ABI."""
 
-from std.algorithm import parallelize
 from std.sys.info import simd_width_of
 
 comptime BPtr = UnsafePointer[UInt8, AnyOrigin[mut=True]]
@@ -135,10 +134,8 @@ def crc_update(
                 PARALLEL_SCRATCH_WORDS, full_chunks - first_chunk
             )
 
-            def update_chunk(chunk: Int) capturing:
-                var start = (
-                    first_chunk + chunk
-                ) * PARALLEL_CHUNK_BYTES
+            for chunk in range(chunk_count):
+                var start = (first_chunk + chunk) * PARALLEL_CHUNK_BYTES
                 if reflected:
                     table[SCRATCH_OFFSET + chunk] = crc_slicing_reflected(
                         data + start,
@@ -155,10 +152,6 @@ def crc_update(
                         width,
                         mask,
                     )
-
-            parallelize[update_chunk](
-                chunk_count, min(PARALLEL_WORKERS, chunk_count)
-            )
             for chunk in range(chunk_count):
                 if reflected:
                     state = advance_chunk_reflected(state, table)
