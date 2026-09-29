@@ -22,7 +22,7 @@ def crc_slicing_reflected(
     while i + SLICE_BYTES <= n:
         var next_state = UInt64(0)
         comptime for group in range(SLICE_BYTES // W):
-            var bytes = data.load[width=W, alignment=1](i + group * W)
+            var bytes = data.unsafe_load[width=W, alignment=1](i + group * W)
             comptime for lane in range(W):
                 comptime position = group * W + lane
                 var byte = bytes[lane]
@@ -54,7 +54,7 @@ def crc_slicing_forward(
         aligned_state = state << UInt64(64 - width)
         var next_state = UInt64(0)
         comptime for group in range(SLICE_BYTES // W):
-            var bytes = data.load[width=W, alignment=1](i + group * W)
+            var bytes = data.unsafe_load[width=W, alignment=1](i + group * W)
             comptime for lane in range(W):
                 comptime position = group * W + lane
                 var byte = bytes[lane]
